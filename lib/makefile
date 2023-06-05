@@ -7,8 +7,6 @@ SRCS := ccv_cache.c ccv_memory.c 3rdparty/siphash/siphash24.c 3rdparty/kissfft/k
 
 SRC_OBJS := $(patsubst %.c,%.o,$(SRCS))
 
-CUDA_OBJS := $(patsubst %.c,%.o,$(patsubst %.cu,%.o,$(CUDA_SRCS)))
-
 # Make nnc/libnnc.o a phony target therefore it will be triggered every time.
 .PHONY: release all lib clean dep nnc/libnnc.o
 

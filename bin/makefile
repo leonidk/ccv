@@ -1,7 +1,7 @@
 include ../lib/config.mk
 
 LDFLAGS := -L"../lib" -lccv $(LDFLAGS)
-CFLAGS := -O3 -Wall -I"../lib" $(CFLAGS)
+CFLAGS := -O3 -march=native -ffast-math -Wall -I"../lib" $(CFLAGS)
 
 TARGETS = bbffmt msermatch siftmatch bbfcreate bbfdetect scdcreate scddetect swtcreate swtdetect dpmcreate dpmdetect tld icfcreate icfdetect icfoptimize cifar-10 image-net cnnclassify aflw
 
