@@ -12,34 +12,34 @@ ccv_tld_param_t cld_params = {
 		15,
 	},
 	.level = 5,
-	.min_forward_backward_error = 100,
-	.min_eigen = 0.025,
-	.min_win = 20,
-	.interval = 3,
-	.shift = 0.1,
-	.top_n = 100,
+	.min_forward_backward_error = 124,
+	.min_eigen = 0.02,
+	.min_win = 23,
+	.interval = 4,
+	.shift = 0.07,
+	.top_n = 133,
 	.rotation = 0,
-	.include_overlap = 0.7,
-	.exclude_overlap = 0.2,
-	.structs = 40,
-	.features = 18,
-	.validate_set = 0.5,
-	.nnc_same = 0.95,
-	.nnc_thres = 0.65,
-	.nnc_verify = 0.7,
-	.nnc_beyond = 0.8,
-	.nnc_collect = 0.5,
-	.bad_patches = 100,
-	.new_deform = 20,
-	.track_deform = 10,
-	.new_deform_angle = 20,
-	.track_deform_angle = 10,
-	.new_deform_scale = 0.02,
+	.include_overlap = 0.70,
+	.exclude_overlap = 0.26,
+	.structs = 66,
+	.features = 12,
+	.validate_set = 0.41,
+	.nnc_same = 0.71,
+	.nnc_thres = 0.92,
+	.nnc_verify = 0.76,
+	.nnc_beyond = 0.74,
+	.nnc_collect = 0.54,
+	.bad_patches = 73,
+	.new_deform = 15,
+	.track_deform = 13,
+	.new_deform_angle = 21,
+	.track_deform_angle = 4,
+	.new_deform_scale = 0.04,
 	.track_deform_scale = 0.02,
-	.new_deform_shift = 0.02,
+	.new_deform_shift = 0.03,
 	.track_deform_shift = 0.02,
 	.tld_patch_size = 10,
-	.tld_grid_sparsity = 10,
+	.tld_grid_sparsity = 11,
 };
 
 int main(int argc, char **argv)
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 		double v = atof(argv[i]);
 		switch(i) {
 			case 6:
-				cld_params.win_size = ccv_size((int)round(v),(int)round(v));
+				cld_params.win_size = ccv_size(2*((int)round(v))+1 , 2*((int)round(v))+1);
 				break;
 			case 7:
 				cld_params.level = (int)round(v);
