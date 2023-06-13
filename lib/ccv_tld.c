@@ -35,10 +35,9 @@ const ccv_tld_param_t ccv_tld_default_params = {
 	.track_deform_scale = 0.02,
 	.new_deform_shift = 0.02,
 	.track_deform_shift = 0.02,
+	.tld_patch_size = 10,
+	.tld_grid_sparsity = 10,
 };
-
-#define TLD_GRID_SPARSITY (10)
-#define TLD_PATCH_SIZE (10)
 
 static CCV_IMPLEMENT_MEDIAN(_ccv_tld_median, float)
 
@@ -87,9 +86,9 @@ static float _ccv_tld_norm_cross_correlate(ccv_dense_matrix_t* r0, ccv_dense_mat
 static ccv_rect_t _ccv_tld_short_term_track(ccv_dense_matrix_t* a, ccv_dense_matrix_t* b, ccv_rect_t box, ccv_tld_param_t params)
 {
 	ccv_rect_t newbox = ccv_rect(0, 0, 0, 0);
-	ccv_array_t* point_a = ccv_array_new(sizeof(ccv_decimal_point_t), (TLD_GRID_SPARSITY - 1) * (TLD_GRID_SPARSITY - 1), 0);
-	float gapx = (float)box.width / TLD_GRID_SPARSITY;
-	float gapy = (float)box.height / TLD_GRID_SPARSITY;
+	ccv_array_t* point_a = ccv_array_new(sizeof(ccv_decimal_point_t), (params.tld_grid_sparsity - 1) * (params.tld_grid_sparsity - 1), 0);
+	float gapx = (float)box.width / params.tld_grid_sparsity;
+	float gapy = (float)box.height / params.tld_grid_sparsity;
 	float x, y;
 	for (x = gapx * 0.5; x < box.width; x += gapx)
 		for (y = gapy * 0.5; y < box.height; y += gapy)
@@ -113,10 +112,10 @@ static ccv_rect_t _ccv_tld_short_term_track(ccv_dense_matrix_t* a, ccv_dense_mat
 	ccv_array_t* point_c = 0;
 	ccv_optical_flow_lucas_kanade(b, a, point_b, &point_c, params.win_size, params.level, params.min_eigen);
 	// compute forward-backward error
-	ccv_dense_matrix_t* r0 = (ccv_dense_matrix_t*)alloca(ccv_compute_dense_matrix_size(TLD_PATCH_SIZE, TLD_PATCH_SIZE, CCV_8U | CCV_C1));
-	ccv_dense_matrix_t* r1 = (ccv_dense_matrix_t*)alloca(ccv_compute_dense_matrix_size(TLD_PATCH_SIZE, TLD_PATCH_SIZE, CCV_8U | CCV_C1));
-	r0 = ccv_dense_matrix_new(TLD_PATCH_SIZE, TLD_PATCH_SIZE, CCV_8U | CCV_C1, r0, 0);
-	r1 = ccv_dense_matrix_new(TLD_PATCH_SIZE, TLD_PATCH_SIZE, CCV_8U | CCV_C1, r1, 0);
+	ccv_dense_matrix_t* r0 = (ccv_dense_matrix_t*)alloca(ccv_compute_dense_matrix_size(params.tld_patch_size, params.tld_patch_size, CCV_8U | CCV_C1));
+	ccv_dense_matrix_t* r1 = (ccv_dense_matrix_t*)alloca(ccv_compute_dense_matrix_size(params.tld_patch_size, params.tld_patch_size, CCV_8U | CCV_C1));
+	r0 = ccv_dense_matrix_new(params.tld_patch_size, params.tld_patch_size, CCV_8U | CCV_C1, r0, 0);
+	r1 = ccv_dense_matrix_new(params.tld_patch_size, params.tld_patch_size, CCV_8U | CCV_C1, r1, 0);
 	int i, j, k, size;
 	int* wrt = (int*)alloca(sizeof(int) * point_a->rnum);
 	{ // will reclaim the stack
@@ -132,8 +131,8 @@ static ccv_rect_t _ccv_tld_short_term_track(ccv_dense_matrix_t* a, ccv_dense_mat
 			p2->point.x >= 0 && p2->point.x < a->cols && p2->point.y >= 0 && p2->point.y < a->rows)
 		{
 			fberr[k] = (p2->point.x - p0->x) * (p2->point.x - p0->x) + (p2->point.y - p0->y) * (p2->point.y - p0->y);
-			ccv_decimal_slice(a, &r0, 0, p0->y - (TLD_PATCH_SIZE - 1) * 0.5, p0->x - (TLD_PATCH_SIZE - 1) * 0.5, TLD_PATCH_SIZE, TLD_PATCH_SIZE);
-			ccv_decimal_slice(b, &r1, 0, p1->point.y - (TLD_PATCH_SIZE - 1) * 0.5, p1->point.x - (TLD_PATCH_SIZE - 1) * 0.5, TLD_PATCH_SIZE, TLD_PATCH_SIZE);
+			ccv_decimal_slice(a, &r0, 0, p0->y - (params.tld_patch_size - 1) * 0.5, p0->x - (params.tld_patch_size - 1) * 0.5, params.tld_patch_size, params.tld_patch_size);
+			ccv_decimal_slice(b, &r1, 0, p1->point.y - (params.tld_patch_size - 1) * 0.5, p1->point.x - (params.tld_patch_size - 1) * 0.5, params.tld_patch_size, params.tld_patch_size);
 			sim[k] = _ccv_tld_norm_cross_correlate(r0, r1);
 			wrt[k] = i;
 			++k;

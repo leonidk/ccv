@@ -1875,6 +1875,8 @@ typedef struct {
 	 * only gets examined at frame % rotation == 1 */
 	int rotation; /**< When >= 1, using "rotation" technique, which, only evaluate a subset of sliding windows for each frame, but after rotation + 1 frames, every sliding window will be evaluated in one of these frames. */
 	/** @} */
+	int tld_patch_size;
+	int tld_grid_sparsity;
 } ccv_tld_param_t;
 
 extern const ccv_tld_param_t ccv_tld_default_params;

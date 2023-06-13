@@ -5,10 +5,140 @@
 #include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
 
+
+ccv_tld_param_t cld_params = {
+	.win_size = {
+		15,
+		15,
+	},
+	.level = 5,
+	.min_forward_backward_error = 100,
+	.min_eigen = 0.025,
+	.min_win = 20,
+	.interval = 3,
+	.shift = 0.1,
+	.top_n = 100,
+	.rotation = 0,
+	.include_overlap = 0.7,
+	.exclude_overlap = 0.2,
+	.structs = 40,
+	.features = 18,
+	.validate_set = 0.5,
+	.nnc_same = 0.95,
+	.nnc_thres = 0.65,
+	.nnc_verify = 0.7,
+	.nnc_beyond = 0.8,
+	.nnc_collect = 0.5,
+	.bad_patches = 100,
+	.new_deform = 20,
+	.track_deform = 10,
+	.new_deform_angle = 20,
+	.track_deform_angle = 10,
+	.new_deform_scale = 0.02,
+	.track_deform_scale = 0.02,
+	.new_deform_shift = 0.02,
+	.track_deform_shift = 0.02,
+	.tld_patch_size = 10,
+	.tld_grid_sparsity = 10,
+};
+
 int main(int argc, char **argv)
 {
-	assert(argc == 6);
+	assert(argc >= 6);
+
 	ccv_rect_t box = ccv_rect(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
+	for(int i=6; i < argc; i++) {
+		double v = atof(argv[i]);
+		switch(i) {
+			case 6:
+				cld_params.win_size = ccv_size((int)round(v),(int)round(v));
+				break;
+			case 7:
+				cld_params.level = (int)round(v);
+				break;
+			case 8:
+				cld_params.min_forward_backward_error = v;
+				break;
+			case 9:
+				cld_params.min_eigen = v;
+				break;
+			case 10:
+				cld_params.min_win = (int)round(v);
+				break;
+			case 11:
+				cld_params.interval = (int)round(v);
+				break;
+			case 12:
+				cld_params.shift = v;
+				break;
+			case 13:
+				cld_params.top_n = (int)round(v);
+				break;
+			case 14:
+				cld_params.include_overlap = v;
+				break;
+			case 15:
+				cld_params.exclude_overlap = v;
+				break;
+			case 16:
+				cld_params.structs =  (int)round(v);
+				break;
+			case 17:
+				cld_params.features = (int)round(v);
+				break;
+			case 18:
+				cld_params.validate_set = v;
+				break;
+			case 19:
+				cld_params.nnc_same = v;
+				break;
+			case 20:
+				cld_params.nnc_thres = v;
+				break;
+			case 21:
+				cld_params.nnc_verify = v;
+				break;
+			case 22:
+				cld_params.nnc_beyond = v;
+				break;
+			case 23:
+				cld_params.nnc_collect = v;
+				break;
+			case 24:
+				cld_params.bad_patches = (int)round(v);
+				break;
+			case 25:
+				cld_params.new_deform = (int)round(v);
+				break;
+			case 26:
+				cld_params.track_deform = (int)round(v);
+				break;
+			case 27:
+				cld_params.new_deform_angle = (int)round(v);
+				break;
+			case 28:
+				cld_params.track_deform_angle = (int)round(v);
+				break;
+			case 29:
+				cld_params.new_deform_scale = v;
+				break;
+			case 30:
+				cld_params.track_deform_scale = v;
+				break;
+			case 31:
+				cld_params.new_deform_shift = v;
+				break;
+			case 32:
+				cld_params.track_deform_shift = v;
+				break;
+			case 33:
+				cld_params.tld_patch_size =  (int)round(v);
+				break;
+			case 34:
+				cld_params.tld_grid_sparsity =  (int)round(v);
+				break;
+		}
+	}
 	printf("%05d: %d %d %d %d %f\n", 0, box.x, box.y, box.width, box.height, 1.0f);
 
 	AVFormatContext *fmtCtx = avformat_alloc_context();
@@ -61,54 +191,63 @@ int main(int argc, char **argv)
 		} else  {
 			break;
 		}
-
+		ccv_comp_t newbox;
 		sws_scale(picture_ctx, pFrame->data, pFrame->linesize, 0, pFrame->height, rgb_picture.data, rgb_picture.linesize);
 		ccv_read(rgb_picture.data[0], &y, CCV_IO_RGB_RAW | CCV_IO_GRAY, pCodecContext->height, pCodecContext->width, rgb_picture.linesize[0]);
 		if(tld==NULL) {
-			tld = ccv_tld_new(y, box, ccv_tld_default_params);
+			tld = ccv_tld_new(y, box, cld_params);
 		} else {
 			ccv_tld_info_t info;
-			ccv_comp_t newbox = ccv_tld_track_object(tld, x, y, &info);
+			newbox = ccv_tld_track_object(tld, x, y, &info);
 			if (tld->found)
 				printf("%05d: %d %d %d %d %f\n", tld->count, newbox.rect.x, newbox.rect.y, newbox.rect.width, newbox.rect.height, newbox.classification.confidence);
 			else
 				printf("%05d: --------------\n", tld->count);
+			//printf("%04d: performed learn: %d, performed track: %d, successfully track: %d; %d passed fern detector, %d passed nnc detector, %d merged, %d confident matches, %d close matches\n", tld->count, info.perform_learn, info.perform_track, info.track_success, info.ferns_detects, info.nnc_detects, info.clustered_detects, info.confident_matches, info.close_matches);
 		}
-
+		/*
 		ccv_dense_matrix_t* image = 0;
 		ccv_read(rgb_picture.data[0], &image, CCV_IO_RGB_RAW | CCV_IO_RGB_COLOR, pCodecContext->height, pCodecContext->width, rgb_picture.linesize[0]);
+		
+		if (tld->found)
+		{
+			ccv_comp_t* comp = &newbox; // (ccv_comp_t*)ccv_array_get(tld->top, i);
+			if (comp->rect.x >= 0 && comp->rect.x + comp->rect.width < image->cols &&
+				comp->rect.y >= 0 && comp->rect.y + comp->rect.height < image->rows)
+			{
+				int x, y;
+				for (x = comp->rect.x; x < comp->rect.x + comp->rect.width; x++)
+				{
+					image->data.u8[image->step * comp->rect.y + x * 3] =
+					image->data.u8[image->step * (comp->rect.y + comp->rect.height - 1) + x * 3] = 255;
+					image->data.u8[image->step * comp->rect.y + x * 3 + 1] =
+					image->data.u8[image->step * (comp->rect.y + comp->rect.height - 1) + x * 3 + 1] =
+					image->data.u8[image->step * comp->rect.y + x * 3 + 2] =
+					image->data.u8[image->step * (comp->rect.y + comp->rect.height - 1) + x * 3 + 2] = 0;
+				}
+				for (y = comp->rect.y; y < comp->rect.y + comp->rect.height; y++)
+				{
+					image->data.u8[image->step * y + comp->rect.x * 3] =
+					image->data.u8[image->step * y + (comp->rect.x + comp->rect.width - 1) * 3] = 255;
+					image->data.u8[image->step * y + comp->rect.x * 3 + 1] =
+					image->data.u8[image->step * y + (comp->rect.x + comp->rect.width - 1) * 3 + 1] =
+					image->data.u8[image->step * y + comp->rect.x * 3 + 2] =
+					image->data.u8[image->step * y + (comp->rect.x + comp->rect.width - 1) * 3 + 2] = 0;
+				}
+			}
+		}
 		char filename[1024];
 		sprintf(filename, "tld-out/output-%04d.png", tld->count);
+		printf("%d %d \n",tld->count,i);
 		ccv_write(image, filename, 0, CCV_IO_PNG_FILE, 0);
 		ccv_matrix_free(image);
+		*/
+
+		
 		av_packet_unref(&packet);
 		x = y;
 		y = 0;
 	}
-	/*
-	struct SwsContext* picture_ctx = sws_getCachedContext(0, video_st->codec->width, video_st->codec->height, video_st->codec->pix_fmt, video_st->codec->width, video_st->codec->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, 0, 0, 0);
 
-	sws_scale(picture_ctx, (const uint8_t* const*)picture->data, picture->linesize, 0, video_st->codec->height, rgb_picture.data, rgb_picture.linesize);
-	ccv_read(rgb_picture.data[0], &x, CCV_IO_RGB_RAW | CCV_IO_GRAY, video_st->codec->height, video_st->codec->width, rgb_picture.linesize[0]);
-	ccv_tld_t* tld = ccv_tld_new(x, box, ccv_tld_default_params);
-	for (;;)
-	{
-		got_picture = 0;
-		int result = av_read_frame(ic, &packet);
-		if (result == AVERROR(EAGAIN))
-			continue;
-		int ret = 0;
-		ret = avcodec_send_packet(video_st->codec, &packet);
-		ret = avcodec_receive_frame(video_st->codec, picture);
-		if (ret < 0)
-			break;
-		sws_scale(picture_ctx, (const uint8_t* const*)picture->data, picture->linesize, 0, video_st->codec->height, rgb_picture.data, rgb_picture.linesize);
-		ccv_read(rgb_picture.data[0], &y, CCV_IO_RGB_RAW | CCV_IO_GRAY, video_st->codec->height, video_st->codec->width, rgb_picture.linesize[0]);
-
-	}
-	ccv_matrix_free(x);
-	ccv_tld_free(tld);
-	ccfree(rgb_picture.data[0]);
-	ccv_disable_cache();*/
 	return 0;
 }
